@@ -1,0 +1,661 @@
+
+<!DOCTYPE html>
+<html lang="et">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sulle on kiri!</title>
+
+<script>
+// ========================================
+// SEADED – MUUDA SIIN
+// ========================================
+const SEADED = {
+  avaleheTekst: "Sulle on kiri!",
+  kirjaPiilumiseTekst: "Üllatus! ♡",
+
+  pealkiri: "Ahoi",
+  tekst: "Selline suvi",
+  allkiri: "Joosep",
+
+  tagasinupuTekst: "Pane kiri tagasi ümbrikusse",
+
+  pildid: [
+    {
+      fail: "pildid/joosep1.jpg",
+      allkiri: "Suve algus"
+    },
+    {
+      fail: "pildid/joosep2.jpg",
+      allkiri: "Päikeselised hetked"
+    },
+    {
+      fail: "pildid/joosep3.jpg",
+      allkiri: "Meie seiklused"
+    },
+    {
+      fail: "pildid/joosep4.jpg",
+      allkiri: "Imeline suvi"
+    }
+  ]
+};
+</script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+body {
+  background: #fff4df;
+  font-family: Arial, sans-serif;
+}
+
+/* P5.JS TAUST */
+canvas {
+  position: fixed !important;
+  inset: 0;
+  z-index: 0;
+  display: block;
+  pointer-events: none;
+}
+
+.scene {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  overflow: hidden;
+}
+
+/* ÜMBRIK */
+.center-stage {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: 10;
+  width: min(90vw, 450px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transform: translate(-50%, -50%);
+}
+
+.title {
+  margin: 0 0 28px;
+  text-align: center;
+  font: 600 clamp(48px, 7vw, 82px) "Caveat", cursive;
+  color: #94613d;
+  text-shadow: 0 3px 20px #ffffffaa;
+  animation: titleFloat 4s ease-in-out infinite;
+}
+
+.envelope-button {
+  position: relative;
+  width: min(70vw, 360px);
+  aspect-ratio: 1.55;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  overflow: visible;
+  filter: drop-shadow(0 18px 18px #94613d40);
+  animation: envelopeFloat 4s ease-in-out infinite;
+}
+
+.envelope-button:focus-visible,
+.photo:focus-visible,
+.reset-button:focus-visible {
+  outline: 3px solid #c08b56;
+  outline-offset: 6px;
+}
+
+.envelope-back {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: #f3dbb5;
+  border-radius: 7px;
+}
+
+.letter {
+  position: absolute;
+  z-index: 2;
+  top: 15%;
+  left: 11%;
+  width: 78%;
+  height: 75%;
+  display: grid;
+  place-items: center;
+  background: #fffdf7;
+  border-radius: 5px;
+  box-shadow: 0 3px 12px #8c603c25;
+  transition: transform .85s ease;
+}
+
+.letter span {
+  color: #b67c4a;
+  font: 600 clamp(24px, 4vw, 38px) "Caveat", cursive;
+}
+
+.envelope-front {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  background: linear-gradient(145deg, #fff1d7, #eecb99);
+  clip-path: polygon(
+    0 0, 50% 51%, 100% 0,
+    100% 100%, 0 100%
+  );
+  border-radius: 6px;
+}
+
+.envelope-bottom {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  background: linear-gradient(#f9e7c6, #edcc9f);
+  clip-path: polygon(0 100%, 50% 47%, 100% 100%);
+}
+
+.flap {
+  position: absolute;
+  z-index: 5;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 58%;
+  background: linear-gradient(#fff9ed, #f2dcb6);
+  clip-path: polygon(0 0, 100% 0, 50% 100%);
+  transform-origin: top center;
+  transition: transform .7s ease;
+  backface-visibility: hidden;
+}
+
+.seal {
+  position: absolute;
+  z-index: 6;
+  top: 48%;
+  left: 50%;
+  width: 54px;
+  height: 54px;
+  display: grid;
+  place-items: center;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: radial-gradient(
+    circle at 30% 25%, #efb679, #d88955
+  );
+  color: #fff8ed;
+  font-size: 26px;
+}
+
+/* ÜMBRIKU AVAMINE */
+.center-stage.shaking .envelope-button {
+  animation: shake .48s ease-in-out;
+}
+
+.center-stage.opening .envelope-button {
+  animation: none;
+}
+
+.center-stage.opening .flap {
+  transform: rotateX(180deg);
+  z-index: 1;
+}
+
+.center-stage.opening .letter {
+  transform: translateY(-70%);
+  transition-delay: .35s;
+}
+
+.center-stage.opening .seal {
+  opacity: 0;
+}
+
+.center-stage.exploding {
+  animation: disappear .55s ease-in forwards;
+  pointer-events: none;
+}
+
+/* POLAROIDFOTOD */
+.photo {
+  position: absolute;
+  width: clamp(125px, 19vw, 245px);
+  padding: 10px 10px 14px;
+  border: 0;
+  border-radius: 3px;
+  background: #fffdfa;
+  box-shadow: 0 14px 35px #78563235;
+  cursor: pointer;
+  z-index: 5;
+
+  opacity: 0;
+  pointer-events: none;
+
+  transform:
+    translate(var(--dx, 0px), var(--dy, 0px))
+    rotate(0deg)
+    scale(.12);
+
+  transition:
+    transform 1.45s cubic-bezier(.19, 1.2, .35, 1),
+    opacity .25s ease;
+}
+
+.photo img {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  display: block;
+  object-fit: cover;
+  pointer-events: none;
+}
+
+.photo-caption {
+  display: block;
+  margin-top: 7px;
+  min-height: 26px;
+  text-align: center;
+  font: 600 clamp(17px, 2vw, 24px) "Caveat", cursive;
+  color: #7d6553;
+}
+
+.photo-inner {
+  display: block;
+}
+
+.photo.landed {
+  opacity: 1;
+  pointer-events: auto;
+  transform:
+    translate(0, 0)
+    rotate(var(--rotation))
+    scale(1);
+}
+
+.photo.landed .photo-inner {
+  animation:
+    photoFloat var(--float-duration, 5s)
+    ease-in-out infinite;
+}
+
+.photo-1 {
+  top: 7%;
+  left: 5%;
+  --rotation: -11deg;
+  --float-duration: 4.6s;
+}
+
+.photo-2 {
+  top: 7%;
+  right: 5%;
+  --rotation: 9deg;
+  --float-duration: 5.2s;
+}
+
+.photo-3 {
+  bottom: 7%;
+  left: 6%;
+  --rotation: 8deg;
+  --float-duration: 5.5s;
+}
+
+.photo-4 {
+  bottom: 7%;
+  right: 6%;
+  --rotation: -9deg;
+  --float-duration: 4.9s;
+}
+
+.photo-inner.pop {
+  animation: photoPop .48s ease !important;
+}
+
+/* KESKMINE PABERKAART */
+.paper-card {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: 8;
+
+  width: min(38vw, 440px);
+  max-height: 82vh;
+  overflow-y: auto;
+  padding: clamp(24px, 4vw, 48px);
+
+  background: #fff9ee;
+  border: 1px solid #efdfc7;
+  border-radius: 4px;
+  box-shadow:
+    0 20px 55px #926b4540,
+    inset 0 0 35px #f2e3cd55;
+
+  text-align: center;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+
+  transform:
+    translate(-50%, -45%)
+    scale(.65)
+    rotate(-5deg);
+
+  transition:
+    opacity .8s ease,
+    transform 1s cubic-bezier(.2, 1.3, .35, 1),
+    visibility 0s linear 1s;
+}
+
+.paper-card.visible {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transform:
+    translate(-50%, -50%)
+    scale(1)
+    rotate(-1deg);
+
+  transition:
+    opacity .8s ease,
+    transform 1s cubic-bezier(.2, 1.3, .35, 1),
+    visibility 0s;
+}
+
+.paper-heading {
+  margin: 0 0 16px;
+  font: 700 clamp(48px, 6vw, 82px) "Caveat", cursive;
+  color: #9b6842;
+}
+
+.paper-message {
+  margin: 0;
+  font: 500 clamp(25px, 3vw, 39px) "Caveat", cursive;
+  color: #795f4a;
+  white-space: pre-line;
+}
+
+.paper-signature {
+  margin: 30px 0 24px;
+  text-align: right;
+  font: 600 clamp(26px, 3vw, 39px) "Caveat", cursive;
+  color: #9b6842;
+}
+
+.reset-button {
+  padding: 11px 18px;
+  border: 1px solid #d8ba94;
+  border-radius: 30px;
+  background: #f7e8d2;
+  color: #805b3e;
+  cursor: pointer;
+  font-size: 13px;
+  line-height: 1.35;
+  transition: background .2s, transform .2s;
+}
+
+.reset-button:hover {
+  background: #efd5b3;
+  transform: translateY(-2px);
+}
+
+/* KONFETI JA SÜDAMED */
+.particle {
+  position: fixed;
+  z-index: 30;
+  pointer-events: none;
+  will-change: transform, opacity;
+}
+
+.confetti {
+  width: 9px;
+  height: 14px;
+  border-radius: 2px;
+}
+
+.heart {
+  font-size: 20px;
+  line-height: 1;
+}
+
+/* ANIMATSIOONID */
+@keyframes envelopeFloat {
+  0%, 100% {
+    transform: translateY(0) rotate(-.5deg);
+  }
+  50% {
+    transform: translateY(-13px) rotate(.5deg);
+  }
+}
+
+@keyframes titleFloat {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-5px);
+  }
+}
+
+@keyframes shake {
+  0%, 100% {
+    transform: translate(0, 0) rotate(0);
+  }
+  15% {
+    transform: translate(-7px, 2px) rotate(-3deg);
+  }
+  30% {
+    transform: translate(7px, -2px) rotate(3deg);
+  }
+  45% {
+    transform: translate(-6px, 1px) rotate(-2deg);
+  }
+  60% {
+    transform: translate(6px, 0) rotate(2deg);
+  }
+  80% {
+    transform: translate(-2px, 0) rotate(-1deg);
+  }
+}
+
+@keyframes disappear {
+  0% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  45% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.12);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(.1);
+  }
+}
+
+@keyframes photoFloat {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-11px);
+  }
+}
+
+@keyframes photoPop {
+  0%, 100% {
+    transform: translateY(0) scale(1);
+  }
+  35% {
+    transform: translateY(-28px) scale(1.1);
+  }
+  65% {
+    transform: translateY(-10px) scale(1.04);
+  }
+}
+
+/* MOBIIL */
+@media (max-width: 600px) {
+  .photo {
+    width: clamp(90px, 31vw, 145px);
+    padding: 6px 6px 8px;
+  }
+
+  .photo-1, .photo-2 { top: 5%; }
+  .photo-3, .photo-4 { bottom: 5%; }
+
+  .photo-1, .photo-3 { left: 5%; }
+  .photo-2, .photo-4 { right: 5%; }
+
+  .photo-caption {
+    font-size: 16px;
+    min-height: 18px;
+  }
+
+  .paper-card {
+    width: min(72vw, 330px);
+    padding: 24px 16px;
+  }
+
+  .paper-heading { font-size: 52px; }
+  .paper-message { font-size: 27px; }
+  .paper-signature { font-size: 27px; }
+
+  .reset-button {
+    font-size: 12px;
+    padding: 9px 12px;
+  }
+
+  .envelope-button {
+    width: min(66vw, 320px);
+  }
+
+  .title { font-size: 53px; }
+
+  .seal {
+    width: 43px;
+    height: 43px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .envelope-button,
+  .title,
+  .photo-inner {
+    animation: none;
+  }
+}
+</style>
+</head>
+
+<body>
+
+<main class="scene">
+
+  <!-- ÜMBRIK -->
+  <div class="center-stage" id="centerStage">
+
+    <h1 class="title" id="introTitle"></h1>
+
+    <button
+      class="envelope-button"
+      id="envelopeButton"
+      type="button"
+      aria-label="Ava kiri"
+    >
+      <div class="envelope-back"></div>
+
+      <div class="letter">
+        <span id="peekText"></span>
+      </div>
+
+      <div class="envelope-front"></div>
+      <div class="envelope-bottom"></div>
+      <div class="flap"></div>
+      <div class="seal">♥</div>
+    </button>
+
+  </div>
+
+  <!-- NELI FOTOT -->
+  <button class="photo photo-1" type="button">
+    <span class="photo-inner">
+      <img alt="">
+      <span class="photo-caption"></span>
+    </span>
+  </button>
+
+  <button class="photo photo-2" type="button">
+    <span class="photo-inner">
+      <img alt="">
+      <span class="photo-caption"></span>
+    </span>
+  </button>
+
+  <button class="photo photo-3" type="button">
+    <span class="photo-inner">
+      <img alt="">
+      <span class="photo-caption"></span>
+    </span>
+  </button>
+
+  <button class="photo photo-4" type="button">
+    <span class="photo-inner">
+      <img alt="">
+      <span class="photo-caption"></span>
+    </span>
+  </button>
+
+  <!-- KESKMINE PABERKAART -->
+  <section
+    class="paper-card"
+    id="paperCard"
+    aria-label="Õnnitluskaart"
+  >
+    <h2 class="paper-heading" id="cardHeading"></h2>
+    <p class="paper-message" id="cardMessage"></p>
+    <p class="paper-signature" id="cardSignature"></p>
+
+    <button
+      class="reset-button"
+      id="resetButton"
+      type="button"
+    ></button>
+  </section>
+
+</main>
+
+<!-- P5.JS -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.11.1/p5.min.js"></script>
+
+<!-- TAUST JA ANIMATSIOONID -->
+<script src="sketch.js"></script>
+
+<!-- TAUSTA AKTIIVSUSE JUHTIMINE -->
+<script>
+  // Muutuja TAUSTA_AKTIIVSUS on määratud sketch.js-is.
+  // Selle muutmine paneb tausta sujuvalt elavnema
+  // või tagasi rahunema.
+
+  document.getElementById("envelopeButton")
+    .addEventListener("click", () => {
+      TAUSTA_AKTIIVSUS = 1;
+    });
+
+  document.getElementById("resetButton")
+    .addEventListener("click", () => {
+      TAUSTA_AKTIIVSUS = 0;
+    });
+</script>
+
+</body>
+</html>
